@@ -1,9 +1,12 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:mini_project27/auth_service.dart';
+import 'package:mini_project27/board.dart';
+import 'package:mini_project27/board_service.dart';
 import 'package:mini_project27/login.dart';
 import 'package:mini_project27/news.dart';
 import 'package:mini_project27/newsservice.dart';
+import 'package:mini_project27/search.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -16,6 +19,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (context) => NewsService()),
         ChangeNotifierProvider(create: (context) => AuthService()),
+        ChangeNotifierProvider(create: (context) => BoardService()),
       ],
       child: const MyApp(),
     ),
@@ -41,9 +45,9 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late TabController _tabController;
+  late AnimationController _animationController;
   int currentIndex = 0;
 
   final List<Tab> myTabs = <Tab>[
@@ -73,11 +77,19 @@ class _HomePageState extends State<HomePage>
             .read<NewsService>()
             .getNewsData('${myTabs[_tabController.index].text}');
       });
+
+    _animationController =
+        AnimationController(vsync: this, duration: Duration(seconds: 1));
+    _animationController.addListener(() {
+      setState(() {});
+    });
+    _animationController.repeat();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -135,21 +147,29 @@ class _HomePageState extends State<HomePage>
                   return ListView.separated(
                     itemCount: newsService.newsList.length,
                     itemBuilder: (context, index) {
-                      News news = newsService.newsList[index];
-                      return ListTile(
-                        onTap: () {
-                          launch(news.link);
-                        },
-                        title: Text(news.title),
-                        subtitle: Text(news.time),
-                        leading: Text('${index + 1}'),
-                      );
+                      if (newsService.newsList.isNotEmpty) {
+                        News news = newsService.newsList[index];
+                        return ListTile(
+                          onTap: () {
+                            launch(news.link);
+                          },
+                          title: Text(news.title),
+                          subtitle: Text(news.time),
+                          leading: Text('${index + 1}'),
+                        );
+                      } else {
+                        return Container();
+                      }
                     },
                     separatorBuilder: (context, index) {
-                      return Divider(
-                        height: 9,
-                        color: Colors.black,
-                      );
+                      if (newsService.newsList.isNotEmpty) {
+                        return Divider(
+                          height: 9,
+                          color: Colors.black,
+                        );
+                      } else {
+                        return Divider(height: 9, color: Colors.transparent);
+                      }
                     },
                   );
                 },
@@ -197,17 +217,44 @@ class _HomePageState extends State<HomePage>
                   ),
                   Row(),
                   ListTile(
-                      title: Text('뉴스검색'),
-                      trailing: Icon(
-                        Icons.arrow_forward_ios,
-                      ),
-                      onTap: () {}),
+                    title: Text('뉴스검색'),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios,
+                    ),
+                    onTap: () {
+                      if (AuthService().currentUser() != null) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => Search()),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('로그인이 필요합니다'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
                   ListTile(
                       title: Text('자유게시판'),
                       trailing: Icon(
                         Icons.arrow_forward_ios,
                       ),
-                      onTap: () {})
+                      onTap: () {
+                        if (AuthService().currentUser() != null) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => Board()),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('로그인이 필요합니다'),
+                            ),
+                          );
+                        }
+                      })
                 ],
               ),
             ),

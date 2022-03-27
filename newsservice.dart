@@ -5,13 +5,15 @@ import 'package:http/http.dart' as http;
 import 'package:mini_project27/news.dart';
 
 class NewsService extends ChangeNotifier {
-  NewsService() {}
+  NewsService() {
+    getNewsData('경제');
+  }
   List<News> newsList = [];
 
   void getNewsData(String q) async {
     newsList.clear();
     String url =
-        'https://openapi.naver.com/v1/search/news.json?query=$q&display=10&start=1&sort=sim';
+        'https://openapi.naver.com/v1/search/news.json?query=$q&display=20&start=1&sort=sim';
     final response = await http.get(
       Uri.parse(url),
       headers: {
